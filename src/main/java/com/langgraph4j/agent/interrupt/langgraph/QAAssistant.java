@@ -1,15 +1,12 @@
 package com.langgraph4j.agent.interrupt.langgraph;
 
-import org.bsc.langgraph4j.CompileConfig;
-import org.bsc.langgraph4j.CompiledGraph;
-import org.bsc.langgraph4j.GraphStateException;
-import org.bsc.langgraph4j.RunnableConfig;
-import org.bsc.langgraph4j.StateGraph;
+import org.bsc.langgraph4j.*;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.checkpoint.MemorySaver;
 import org.bsc.langgraph4j.state.StateSnapshot;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.bsc.langgraph4j.StateGraph.END;
@@ -20,7 +17,7 @@ public class QAAssistant {
 
     private final CompiledGraph<QAState> graph;
     private RunnableConfig config;
-    private StateSnapshot<QAState> lastSnapshot;
+    //private StateSnapshot<QAState> lastSnapshot;
     private final String threadId;
 
     public QAAssistant() throws GraphStateException {
@@ -77,34 +74,45 @@ public class QAAssistant {
         this.threadId = UUID.randomUUID().toString();
     }
 
+    private QAState executeGraphUpdateConfigAndFetchLastState(Map<String, Object> input ) {
+
+        // Get last state
+        var state = graph.stream(input, config)
+                .stream()
+                .peek( o -> System.out.println("data: " + o.state().data()) )
+                .reduce((a, b) -> b)
+                .map(NodeOutput::state)
+                .orElseThrow()
+                ;
+        // Get last snapshot
+        graph.getStateHistory(config).stream().findFirst().ifPresent(
+               snapshot -> {
+                   config = snapshot.config();
+               }
+       );
+
+       return state;
+    }
 
     // first rest call
-    public StateSnapshot<QAState> startConversation(String question) {
+    public QAState startConversation(String question) {
         System.out.println("question: " + question);
 
-        // genereate threadId
+        // generate threadId
         config = RunnableConfig.builder()
                 .threadId(threadId)
                 .streamMode(CompiledGraph.StreamMode.SNAPSHOTS)
                 .build();
 
-
-        graph.stream(Map.of("question", question), config)
-                .forEach(o -> {
-                    System.out.println("data: " + o.state().data());
-                });
-
-
-        StateSnapshot<QAState> snap = graph.getState(config);
-        System.out.println("snap: " + snap);
-        lastSnapshot = snap;
-        return snap;
+        return executeGraphUpdateConfigAndFetchLastState( Map.of("question", question) );
     }
 
     // second and third rest call
-    public StateSnapshot<QAState> provideFeedback(String input) throws Exception {
+    public QAState provideFeedback(String input) throws Exception {
         System.out.println("assistant: " + this);
         System.out.println("input: " + input);
+
+        StateSnapshot<QAState> lastSnapshot = graph.getState(config);
 
         String field = lastSnapshot.state().country().isBlank() ? "country" : "city";
 
@@ -112,20 +120,10 @@ public class QAAssistant {
                 config,
                 Map.of(field, input)
         );
+
         System.out.println("config after updateState: " + config);
 
-        graph.streamSnapshots(
-                null,
-                 config
-        ).forEach(o -> {
-            System.out.println("data: " + o.state().data());
-        });
-
-        StateSnapshot<QAState> snap = graph.getState(config);
-        System.out.println("snap: " + snap);
-
-        lastSnapshot = snap;
-        return snap;
+        return executeGraphUpdateConfigAndFetchLastState( null );
     }
 
 
