@@ -2,7 +2,6 @@ package com.langgraph4j.agent.interrupt.controller;
 
 import com.langgraph4j.agent.interrupt.langgraph.QAAssistant;
 import com.langgraph4j.agent.interrupt.langgraph.QAState;
-import org.bsc.langgraph4j.state.StateSnapshot;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,14 +39,13 @@ public class ChatController {
 
         System.out.println("assistant: " + assistant.toString());
 
-        StateSnapshot<QAState> snap;
+        QAState state;
         if (req.sessionId() == null) {
-            snap = assistant.startConversation(req.message());
+            state = assistant.startConversation(req.message());
         } else {
-            snap = assistant.provideFeedback(req.message());
+            state = assistant.provideFeedback(req.message());
         }
 
-        QAState state = snap.state();
         String agentMsg = state.messages();
         boolean waitingForUser = state.country().isBlank() || state.city().isBlank();
         return ResponseEntity.ok(new ChatResponse(sessionId, agentMsg, waitingForUser));

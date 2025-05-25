@@ -8,7 +8,7 @@
         <version>3.4.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.langgraph4hj</groupId>
+    <groupId>com.langgraph4j</groupId>
     <artifactId>agent-interrupt</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>agent-interrupt</name>
@@ -40,7 +40,7 @@
         <dependency>
             <groupId>org.bsc.langgraph4j</groupId>
             <artifactId>langgraph4j-core</artifactId>
-            <version>1.5.8</version> <!-- orijinal versiyonunu korudum :contentReference[oaicite:0]{index=0} -->
+            <version>1.5.13</version> <!-- orijinal versiyonunu korudum :contentReference[oaicite:0]{index=0} -->
         </dependency>
     </dependencies>
 
